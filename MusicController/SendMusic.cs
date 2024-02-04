@@ -20,34 +20,23 @@ namespace Exam_Bot.MusicController
             string link = update.Message.Text;
             RootMusic Musics = JsonConvert.DeserializeObject<RootMusic>(MusicDownloader.RunApi(link).Result);
 
+            List<string> music_uris = new List<string>();
             var buttons= new List<InlineKeyboardButton>();
             int i = 1; string all_music_names = "";
             foreach (var music in Musics.tracks.hits)
             {
                 all_music_names += $"{i}) {music.track.share.subject}\n";
-                buttons.Add(InlineKeyboardButton.WithCallbackData(text: $"{i}", callbackData: music.track.hub.actions[1].uri));
+                buttons.Add(InlineKeyboardButton.WithCallbackData(text: $"{i}", callbackData: $"{i-1}"));
                 i++;
+                music_uris.Add(music.track.hub.actions[1].uri);
+            }
+            using (StreamWriter sw = new StreamWriter(@"C:\Users\HP\Desktop\Exam_Bot\MusicController\uri_path.json"))
+            {
+                string newData = JsonConvert.SerializeObject(music_uris);
+                sw.Write(newData);
             }
 
 
-            //var markup = new InlineKeyboardMarkup(
-            //new InlineKeyboardButton[][]
-            //{
-            //    new InlineKeyboardButton[]
-            //    {
-            //        InlineKeyboardButton
-            //            .WithCallbackData(text: "1", callbackData: $"1-{link}"),
-            //        InlineKeyboardButton
-            //            .WithCallbackData(text: "2", callbackData: $"2-{link}"),
-            //        InlineKeyboardButton
-            //            .WithCallbackData(text: "3", callbackData: $"3-{link}"),
-            //        InlineKeyboardButton
-            //            .WithCallbackData(text: "4", callbackData: $"4-{link}"),
-            //        InlineKeyboardButton
-            //            .WithCallbackData(text: "5", callbackData: $"5-{link}"),
-            //    }
-            //}
-            //);
             await botClient.SendTextMessageAsync(
                     chatId: update.Message.Chat.Id,
                     text: all_music_names,
