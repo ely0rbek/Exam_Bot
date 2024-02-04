@@ -35,8 +35,6 @@ namespace Exam_Bot.MusicController
                 string newData = JsonConvert.SerializeObject(music_uris);
                 sw.Write(newData);
             }
-
-
             await botClient.SendTextMessageAsync(
                     chatId: update.Message.Chat.Id,
                     text: all_music_names,
