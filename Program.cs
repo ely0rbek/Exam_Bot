@@ -21,8 +21,6 @@ var adress_users = @"C:\Users\HP\Desktop\Sheenam\ContactBot\bin\Debug\net8.0\use
 var adress_admins = @"C:\Users\HP\Desktop\Sheenam\ContactBot\bin\Debug\net8.0\admins.json";
 var adress_users_pdf = @"C:\Users\HP\Desktop\Sheenam\ContactBot\bin\Debug\net8.0\users.pdf";
 
-Person local_person = new Person();
-
 #region
 using CancellationTokenSource cts = new();
 
@@ -85,35 +83,55 @@ async Task HandleContactMessageAsync(ITelegramBotClient botClient, Update update
     {
         await AddModelToJsonFile(new Person() { id = message.Chat.Id, Name = message.Contact!.FirstName, Phone_Number = message.Contact.PhoneNumber });
     }
-    local_person = new Person() { id = message.Chat.Id, Name = message.Contact!.FirstName, Phone_Number = message.Contact.PhoneNumber };
-    if (isUserOrAdmin(local_person) == "admin")
-    {
-        ReplyKeyboardMarkup requestReplyKeyboard = new(
-            new[]
-            {
-                        new KeyboardButton("/send_advertisement"),
-                        new KeyboardButton("/getUsers")
-            });
-        requestReplyKeyboard.ResizeKeyboard = true;
-        requestReplyKeyboard.OneTimeKeyboard = true;
-        await botClient.SendTextMessageAsync(
-             chatId: message.Chat.Id,
-             text: "Biror buttonni bosing!",
-             replyMarkup: requestReplyKeyboard
-         );
-    }
-    else if (isUserOrAdmin(local_person) == "user")
+    if (isUserOrAdmin(message.Chat.Id) == "user")
     {
         await botClient.SendTextMessageAsync(
              chatId: message.Chat.Id,
-             text: "Musiqa nomi yoki video linkini tashlang."
+             text: "Musiqa nomi yoki video linkini tashlang.",
+             replyMarkup: new ReplyKeyboardRemove()
          );
+        
     }
 }
 async Task HandleTextMessageAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
     Message message = update.Message;
-    if (CheckUserById(message!.Chat.Id) == false)
+    ReplyKeyboardMarkup requestReplyKeyboard = new(
+                new[]
+                {
+                        new KeyboardButton("/send_advertisement"),
+                        new KeyboardButton("/getUsers")
+                });
+    requestReplyKeyboard.ResizeKeyboard = true;
+    requestReplyKeyboard.OneTimeKeyboard = true;
+    if (message.Text == "/start")
+    {
+        if (isUserOrAdmin(message.Chat.Id) == "admin")
+        {
+            await botClient.SendTextMessageAsync(
+                 chatId: message.Chat.Id,
+                 text: "Biror buttonni bosing!",
+                 replyMarkup: requestReplyKeyboard
+             );
+        }
+        if (CheckUserById(message!.Chat.Id))
+        {
+            await botClient.SendTextMessageAsync(
+                 chatId: message.Chat.Id,
+                 text: "Siz botdan ro'yxatdan o'tgansiz.\n Musiqa nomi yoki video linkini jo'nating",
+                 replyMarkup: new ReplyKeyboardRemove()
+             );
+        }
+    }
+    if(message.Text == "1234")
+    {
+        await botClient.SendTextMessageAsync(
+                 chatId: message.Chat.Id,
+                 text: "Biror buttonni bosing!",
+                 replyMarkup: requestReplyKeyboard
+             );
+    }
+    if (CheckUserById(message!.Chat.Id) == false && message.Text != "1234")
     {
         ReplyKeyboardMarkup markup1 = new ReplyKeyboardMarkup(KeyboardButton.WithRequestContact("Contact jo'nating."));
         markup1.ResizeKeyboard = true;
@@ -144,7 +162,6 @@ async Task HandleTextMessageAsync(ITelegramBotClient botClient, Update update, C
         }
     }
 
-
     if (message.Text == "/getUsers")
     {
         CreateAndSendPdf(adress_users,message);
@@ -159,7 +176,7 @@ async Task HandleTextMessageAsync(ITelegramBotClient botClient, Update update, C
 
         //await SendYoutubeMp3.EssentialFunction(botClient, update, cancellationToken);
     }
-    else if(!message.Text.StartsWith("https://www") && message.Text != "/getUsers" && message.Text != "/send_advertisement")
+    else if(!message.Text.StartsWith("https://www") && message.Text != "/getUsers" && message.Text != "/send_advertisement" && message.Text != "/start" && message.Text != "1234")
     {
         await SendMusic.EssentialFunction(botClient, update, cancellationToken);
     }
@@ -188,7 +205,7 @@ async Task  CreateAndSendPdf(string json_path,Message message)
         );
     stream.Dispose();
 }
-string isUserOrAdmin(Person person)
+string isUserOrAdmin(long personId)
 {
     string infos;
     using (StreamReader reader = new StreamReader(adress_admins))
@@ -198,7 +215,7 @@ string isUserOrAdmin(Person person)
     List<Person> persons = JsonSerializer.Deserialize<List<Person>>(infos);
     foreach (Person human in persons)
     {
-        if (human.id == person.id)
+        if (human.id == personId)
         {
             return "admin";
         }
